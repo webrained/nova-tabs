@@ -13,7 +13,6 @@
         />
       </div>
     </div>
-
     <div class="relationship-tabs-panel card overflow-hidden">
       <div class="flex flex-row flex-wrap">
         <div
@@ -22,7 +21,8 @@
                 v-for="(tab, key) in tabs"
                 :key="key"
                 @click="handleTabClick(tab, $event)"
-        >{{ tab.name }}</div>
+        >{{ tab.name }}
+        </div>
         <div class="flex-1 border-b-2 border-40"></div>
       </div>
       <div
@@ -79,7 +79,7 @@
     data() {
       return {
         tabs: null,
-        activeTab: ""
+        activeTab: "",
       };
     },
     computed: {
@@ -89,10 +89,10 @@
     },
     watch: {
       errors: {
-        handler: function(errors) {
+        handler: function (errors) {
           let vm = this;
           let goToTab = false;
-          Object.keys(vm.tabs).forEach(function(key) {
+          Object.keys(vm.tabs).forEach(function (key) {
             if (vm.tabHasErrors(vm.tabs[key]) && !goToTab) {
               goToTab = true;
               return vm.handleTabClick(vm.tabs[key]);
@@ -119,8 +119,24 @@
       });
       this.tabs = tabs;
       this.handleTabClick(tabs[Object.keys(tabs)[0]]);
+
+
     },
     methods: {
+      toUrl(obj) {
+        var str = "";
+        for (var key in obj) {
+          if (str != "") {
+            str += "&";
+          }
+          str += key + "=" + encodeURIComponent(obj[key]);
+        }
+        return str;
+      },
+      toObject(str) {
+        let obj = JSON.parse('{"' + decodeURI(str).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g, '":"') + '"}')
+        return obj;
+      },
       /**
        * Fill the given FormData object with the field's internal value.
        */
@@ -136,14 +152,26 @@
         this.$emit("actionExecuted");
       },
       handleTabClick(tab, event) {
-        this.activeTab = tab.name;
-      },
+        console.log('event', event);
+        var search = location.search.substring(1);
 
+        if (typeof event == 'undefined') {
+          if (this.toObject(search)['data-tab']) {
+            this.activeTab = this.toObject(search)['data-tab'];
+          }
+        } else {
+          let obj = this.toObject(search);
+          delete obj['data-tab']
+          window.history.pushState(null, "Title", `?${this.toUrl(obj)}&data-tab=${tab.name}`);
+          this.activeTab = tab.name;
+        }
+
+      },
       tabHasErrors(tab) {
         let hasErrors = false;
         let vm = this;
 
-        Object.keys(this.errors.errors).forEach(function(key) {
+        Object.keys(this.errors.errors).forEach(function (key) {
           if (_.includes(tab.fields.map(o => o["attribute"]), key)) {
             hasErrors = true;
           }
@@ -161,10 +189,12 @@
   .relationship-tabs-panel {
     .text-error {
       color: var(--danger);
+
       &.border-primary {
         border-color: var(--danger);
       }
     }
+
     .card {
       box-shadow: none;
     }
